@@ -1,0 +1,13 @@
+flask==3.1.0
+flask-cors==5.0.1
+flask-socketio==5.5.1
+flask-sqlalchemy==3.1.1
+python-socketio==5.12.1
+numpy==2.2.4
+pandas==2.2.3
+scikit-learn==1.6.1
+xgboost==2.1.4
+tensorflow==2.18.0
+joblib==1.4.2
+eventlet==0.38.0
+python-dotenv==1.1.0
