@@ -8,7 +8,7 @@ from backend.data.ingestion import DataIngestion
 from backend.ai.model_manager import ModelManager
 from backend.utils.logger import logger
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(cors_allowed_origins="*", async_mode="eventlet")
 model_mgr = ModelManager()
 ingestion = DataIngestion()
 sim_thread = None
