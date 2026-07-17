@@ -47,13 +47,13 @@ const techStack = [
 
 export default function HelpPage() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Help & Documentation</h1>
-        <p className="text-xs text-white/40 mt-1">Platform guide and technical reference</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Help & Documentation</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Platform guide and technical reference</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="lg:col-span-2 space-y-4">
           <GlassCard className="p-5" hover={false}>
             <div className="flex items-center gap-2 mb-4">

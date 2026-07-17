@@ -87,7 +87,7 @@ export default function Dashboard() {
         return <AlertsPage alerts={alerts} onAcknowledge={acknowledgeAlert} />;
       case "alert-detail":
         return (
-          <div className="p-6">
+          <div className="p-3 md:p-6">
             <AlertDetail
               alert={selectedAlert}
               onBack={() => setActivePage("alerts")}
@@ -109,13 +109,13 @@ export default function Dashboard() {
         return <HelpPage />;
       default:
         return (
-          <motion.div {...pageTransition} className="p-6 space-y-6 max-w-[1600px] mx-auto">
+          <motion.div {...pageTransition} className="p-3 md:p-6 space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
             <div className="flex items-center justify-between">
               <div>
                 <motion.h1
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="text-xl font-display font-bold text-white"
+                  className="text-lg md:text-xl font-display font-bold text-white"
                 >
                   Dashboard
                 </motion.h1>
@@ -123,7 +123,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="text-xs text-white/40 mt-0.5"
+                  className="text-[10px] md:text-xs text-white/40 mt-0.5"
                 >
                   Real-time machine monitoring & AI diagnostics
                 </motion.p>
@@ -132,15 +132,15 @@ export default function Dashboard() {
 
             <KPICards data={currentData} sensorHistory={sensorHistory} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="lg:col-span-2 space-y-4 md:space-y-6">
                 <SensorCharts history={history} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                   <MachineStatusPie history={history} />
                   <AlertDistributionChart alerts={alerts} />
                 </div>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 <AIPredictionPanel prediction={prediction} />
                 <PowerConsumptionChart history={history} />
                 <AlertsWidget

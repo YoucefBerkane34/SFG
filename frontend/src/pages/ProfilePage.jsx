@@ -50,34 +50,34 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Profile</h1>
-        <p className="text-xs text-white/40 mt-1">Manage your account information</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Profile</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Manage your account information</p>
       </div>
 
       <GlassCard className="overflow-hidden" hover={false}>
-        <div className="h-24 bg-gradient-to-r from-electric-500/20 via-cyan-500/10 to-electric-500/20 relative">
+        <div className="h-16 md:h-24 bg-gradient-to-r from-electric-500/20 via-cyan-500/10 to-electric-500/20 relative">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSg1OSwxMzAsMjQ2LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IGZpbGw9InVybCgjZ3JpZCkiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiLz48L3N2Zz4=')] opacity-50" />
         </div>
 
-        <div className="px-6 pb-6">
-          <div className="flex items-end gap-4 -mt-8">
+        <div className="px-3 md:px-6 pb-4 md:pb-6">
+          <div className="flex items-end gap-3 md:gap-4 -mt-6 md:-mt-8">
             <div className="relative group">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-electric-500 to-cyan-500 flex items-center justify-center border-4 border-navy-800 shadow-glow-blue">
-                <User className="w-9 h-9 text-white" />
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-electric-500 to-cyan-500 flex items-center justify-center border-4 border-navy-800 shadow-glow-blue">
+                <User className="w-7 h-7 md:w-9 md:h-9 text-white" />
               </div>
               <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
                 <Camera className="w-5 h-5 text-white" />
               </div>
             </div>
             <div className="flex-1 pb-1">
-              <h2 className="text-lg font-display font-bold text-white">{user?.name || "Admin"}</h2>
-              <p className="text-xs text-white/40">{user?.role || "Operator"}</p>
+              <h2 className="text-base md:text-lg font-display font-bold text-white">{user?.name || "Admin"}</h2>
+              <p className="text-[10px] md:text-xs text-white/40">{user?.role || "Operator"}</p>
             </div>
             <button
               onClick={() => editing ? handleSave() : setEditing(true)}
-              className="btn-primary flex items-center gap-2 text-xs mb-1"
+              className="btn-primary flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs mb-1 shrink-0"
             >
               {editing ? <Check className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
               {editing ? "Save" : "Edit Profile"}
@@ -145,8 +145,8 @@ export default function ProfilePage() {
         </div>
       </GlassCard>
 
-      <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Session Statistics</h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <h3 className="text-[10px] md:text-xs font-semibold text-white/40 uppercase tracking-wider">Session Statistics</h3>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
         {stats.map((s, i) => (
           <GlassCard key={i} className="p-4" delay={i * 0.05}>
             <s.icon className="w-5 h-5 mb-2" style={{ color: s.color }} />

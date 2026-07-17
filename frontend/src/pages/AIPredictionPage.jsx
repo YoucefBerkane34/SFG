@@ -48,10 +48,10 @@ export default function AIPredictionPage({ prediction, history }) {
   const normalCount = history.filter((h) => h.predicted_label === "Normal").length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">AI Prediction</h1>
-        <p className="text-xs text-white/40 mt-1">CNN + XGBoost predictive maintenance analysis</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">AI Prediction</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">CNN + XGBoost predictive maintenance analysis</p>
       </div>
 
       {isBuffering ? (
@@ -70,9 +70,9 @@ export default function AIPredictionPage({ prediction, history }) {
         </GlassCard>
       ) : prediction ? (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             <GlassCard
-              className={`p-6 ${
+              className={`p-4 md:p-6 ${
                 isFailure
                   ? "bg-gradient-to-br from-danger-500/10 border-danger-500/20"
                   : isWarning
@@ -103,10 +103,10 @@ export default function AIPredictionPage({ prediction, history }) {
               </div>
             </GlassCard>
 
-            <GlassCard className="p-6" delay={0.1}>
-              <div className="flex items-center gap-2 mb-6">
+            <GlassCard className="p-4 md:p-6" delay={0.1}>
+              <div className="flex items-center gap-2 mb-4 md:mb-6">
                 <Activity className="w-4 h-4 text-white/60" />
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Risk Assessment</span>
+                <span className="text-[10px] md:text-xs font-semibold text-white/60 uppercase tracking-wider">Risk Assessment</span>
               </div>
               <div className="space-y-5">
                 <div>
@@ -153,10 +153,10 @@ export default function AIPredictionPage({ prediction, history }) {
               </div>
             </GlassCard>
 
-            <GlassCard className="p-6" delay={0.15}>
-              <div className="flex items-center gap-2 mb-6">
+            <GlassCard className="p-4 md:p-6" delay={0.15}>
+              <div className="flex items-center gap-2 mb-4 md:mb-6">
                 <TrendingUp className="w-4 h-4 text-white/60" />
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Model Statistics</span>
+                <span className="text-[10px] md:text-xs font-semibold text-white/60 uppercase tracking-wider">Model Statistics</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -184,7 +184,7 @@ export default function AIPredictionPage({ prediction, history }) {
             </GlassCard>
           </div>
 
-          <GlassCard className="p-5" delay={0.2}>
+          <GlassCard className="p-3 md:p-5" delay={0.2}>
             <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Prediction Confidence Over Time</h3>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={predHistory}>
@@ -224,7 +224,7 @@ export default function AIPredictionPage({ prediction, history }) {
           </GlassCard>
         </>
       ) : (
-        <GlassCard className="p-12">
+        <GlassCard className="p-8 md:p-12">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="w-20 h-20 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-4">
               <Brain className="w-10 h-10 text-white/10" />

@@ -39,6 +39,7 @@ function loadUser() {
 export function AppProvider({ children }) {
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [factory, setFactory] = useState("Factory 1 — Main Plant");
@@ -70,6 +71,14 @@ export function AppProvider({ children }) {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
+  const toggleMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen((prev) => !prev);
+  }, []);
+
+  const closeMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen(false);
+  }, []);
+
   const navigateTo = useCallback((page) => {
     setActivePage(page);
   }, []);
@@ -98,6 +107,9 @@ export function AppProvider({ children }) {
         setActivePage: navigateTo,
         sidebarCollapsed,
         toggleSidebar,
+        mobileSidebarOpen,
+        toggleMobileSidebar,
+        closeMobileSidebar,
         selectedMachine,
         setSelectedMachine,
         searchOpen,

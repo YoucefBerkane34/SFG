@@ -10,3 +10,11 @@ venv/
 
 # Environment
 .env
+.env.*
+
+# Database (local dev)
+**/smartguardian.db
+
+# OS
+.DS_Store
+Thumbs.db

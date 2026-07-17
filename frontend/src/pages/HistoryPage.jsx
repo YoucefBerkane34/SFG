@@ -32,14 +32,14 @@ export default function HistoryPage({ history }) {
   const paged = filtered.slice(page * perPage, (page + 1) * perPage);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Prediction History</h1>
-        <p className="text-xs text-white/40 mt-1">Complete log of AI predictions</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Prediction History</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Complete log of AI predictions</p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="glass-input flex items-center gap-2 flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="glass-input flex items-center gap-2 flex-1 w-full sm:max-w-md">
           <Search className="w-4 h-4 text-white/30" />
           <input
             value={search}

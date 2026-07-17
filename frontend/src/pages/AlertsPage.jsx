@@ -42,7 +42,7 @@ export default function AlertsPage({ alerts, onAcknowledge }) {
 
   if (selectedAlert) {
     return (
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         <AlertDetail
           alert={selectedAlert}
           onBack={() => setSelectedAlert(null)}
@@ -53,14 +53,14 @@ export default function AlertsPage({ alerts, onAcknowledge }) {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Alert Center</h1>
-        <p className="text-xs text-white/40 mt-1">Monitor and manage system alerts</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Alert Center</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Monitor and manage system alerts</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2 flex-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
           <div className="glass-input flex items-center gap-2 flex-1 max-w-md">
             <Search className="w-4 h-4 text-white/30" />
             <input
@@ -71,7 +71,7 @@ export default function AlertsPage({ alerts, onAcknowledge }) {
             />
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {["all", "critical", "warning", "info"].map((f) => (
             <button
               key={f}

@@ -12,7 +12,7 @@ export default function HistoryWidget({ history = [], maxItems = 10 }) {
   const display = [...history].reverse().slice(0, maxItems);
 
   return (
-    <GlassCard className="p-5" delay={0.25}>
+    <GlassCard className="p-3 md:p-5" delay={0.25}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-white/60" />

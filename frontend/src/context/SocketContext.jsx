@@ -17,7 +17,8 @@ export function SocketProvider({ children }) {
   const dataTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const s = io("http://localhost:5000", { transports: ["polling"] });
+    const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const s = io(backendUrl, { transports: ["polling"] });
 
     s.on("connect", () => setConnected(true));
     s.on("disconnect", () => setConnected(false));
@@ -92,7 +93,8 @@ export function SocketProvider({ children }) {
 
   const acknowledgeAlert = async (alertId) => {
     try {
-      await fetch(`/api/alerts/${alertId}/acknowledge`, { method: "PATCH" });
+      const backendUrl = import.meta.env.VITE_API_URL || "";
+      await fetch(`${backendUrl}/api/alerts/${alertId}/acknowledge`, { method: "PATCH" });
       setAlerts((prev) =>
         prev.map((a) => (a.id === alertId ? { ...a, acknowledged: true } : a))
       );

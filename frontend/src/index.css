@@ -164,6 +164,27 @@ body {
 .no-anim-bg .animated-grid { animation: none !important; opacity: 0 !important; }
 .no-anim-bg .animate-particle-float { animation: none !important; opacity: 0 !important; }
 
+/* Mobile responsive utilities */
+@media (max-width: 767px) {
+  .glass-sidebar {
+    width: 260px !important;
+  }
+  .glass-input {
+    @apply text-xs py-2 px-3;
+  }
+  .btn-primary {
+    @apply px-3 py-2 text-xs;
+  }
+  .btn-ghost {
+    @apply px-2 py-1.5 text-xs;
+  }
+}
+
+/* Prevent body scroll when mobile sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
+}
+
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;

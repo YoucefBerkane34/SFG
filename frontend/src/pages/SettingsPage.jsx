@@ -276,11 +276,11 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 max-w-5xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-display font-bold text-white">Settings</h1>
-          <p className="text-xs text-white/40 mt-1">Configure your platform preferences</p>
+          <h1 className="text-lg md:text-xl font-display font-bold text-white">Settings</h1>
+          <p className="text-[10px] md:text-xs text-white/40 mt-1">Configure your platform preferences</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -300,7 +300,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {sections.map((section, si) => {
           const Icon = section.icon;
           return (
@@ -315,11 +315,11 @@ export default function SettingsPage() {
                 {section.items.map((item) => {
                   const value = settings[item.key];
                   return (
-                    <div key={item.key} className="flex items-center justify-between gap-4">
+                    <div key={item.key} className="flex items-center justify-between gap-3 md:gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-white/70 font-medium">{item.label}</div>
                         {item.sublabel && (
-                          <div className="text-[10px] text-white/30 mt-0.5">{item.sublabel}</div>
+                          <div className="text-[9px] md:text-[10px] text-white/30 mt-0.5">{item.sublabel}</div>
                         )}
                       </div>
                       {item.type === "toggle" ? (

@@ -45,8 +45,8 @@ export default function SensorCharts({ history = [] }) {
 
   if (data.length === 0) {
     return (
-      <GlassCard className="p-6">
-        <div className="flex flex-col items-center justify-center h-64 text-white/30">
+      <GlassCard className="p-3 md:p-5">
+        <div className="flex flex-col items-center justify-center h-40 md:h-64 text-white/30">
           <TrendingUp className="w-10 h-10 mb-3 opacity-30" />
           <p className="text-sm">Waiting for sensor data...</p>
           <p className="text-xs text-white/20 mt-1">Start the simulation to see live trends</p>
@@ -56,22 +56,22 @@ export default function SensorCharts({ history = [] }) {
   }
 
   return (
-    <GlassCard className="p-5" delay={0.1}>
-      <div className="flex items-center justify-between mb-4">
+    <GlassCard className="p-3 md:p-5" delay={0.1}>
+      <div className="flex items-center justify-between mb-3 md:mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-white">Real-time Sensor Trends</h3>
-          <p className="text-[10px] text-white/30 mt-0.5">{data.length} data points</p>
+          <h3 className="text-xs md:text-sm font-semibold text-white">Real-time Sensor Trends</h3>
+          <p className="text-[9px] md:text-[10px] text-white/30 mt-0.5">{data.length} data points</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-wrap justify-end">
           {fields.map((f) => (
-            <div key={f.key} className="flex items-center gap-1 text-[10px] text-white/40">
+            <div key={f.key} className="flex items-center gap-1 text-[9px] md:text-[10px] text-white/40">
               <div className="w-2 h-0.5 rounded-full" style={{ background: f.color }} />
               <span className="hidden lg:inline">{f.label}</span>
             </div>
           ))}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={data}>
           <defs>
             {fields.map((f) => (

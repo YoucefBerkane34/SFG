@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: smartfactory-guardian-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --worker-class eventlet --workers 1 --bind 0.0.0.0:$PORT "run:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartfactory-db
+          property: connectionString
+      - key: KERAS_BACKEND
+        value: "jax"
+      - key: TF_CPP_MIN_LOG_LEVEL
+        value: "3"
+      - key: ASYNC_MODE
+        value: "eventlet"
+    healthCheckPath: /api/health
+
+  - type: database
+    name: smartfactory-db
+    plan: free
+    databaseName: smartfactory
+    ipAllowList: []

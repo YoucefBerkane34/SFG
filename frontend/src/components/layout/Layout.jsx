@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import Sidebar from "./Sidebar";
 import TopNavbar from "./TopNavbar";
 import { useApp } from "../../context/AppContext";
@@ -53,12 +53,27 @@ function applySavedSettings() {
   } catch {}
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
+
 export default function Layout({ children }) {
-  const { sidebarCollapsed } = useApp();
+  const { sidebarCollapsed, mobileSidebarOpen, closeMobileSidebar } = useApp();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     applySavedSettings();
   }, []);
+
+  const desktopMargin = sidebarCollapsed ? 72 : 240;
 
   return (
     <div className="min-h-screen relative">
@@ -70,16 +85,35 @@ export default function Layout({ children }) {
             "radial-gradient(ellipse at 20% 50%, rgba(var(--accent-rgb), 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(var(--accent-rgb), 0.03) 0%, transparent 50%)",
         }}
       />
-      <Sidebar />
-      <motion.div
-        initial={false}
-        animate={{ marginLeft: sidebarCollapsed ? 72 : 240 }}
-        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="min-h-screen flex flex-col relative z-10"
+
+      {/* Desktop sidebar — static on md+ */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+
+      {/* Mobile sidebar — overlay */}
+      <div className="md:hidden">
+        <AnimatePresence>
+          {mobileSidebarOpen && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-[fadeIn_0.2s_ease]"
+                onClick={closeMobileSidebar}
+              />
+              <Sidebar mobile />
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Main content */}
+      <div
+        className="min-h-screen flex flex-col relative z-10 transition-[margin] duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+        style={{ marginLeft: isMobile ? 0 : desktopMargin }}
       >
         <TopNavbar />
         <main className="flex-1 overflow-auto">{children}</main>
-      </motion.div>
+      </div>
       <ToastContainer />
     </div>
   );

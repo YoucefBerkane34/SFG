@@ -13,7 +13,7 @@ export default function AlertsWidget({ alerts = [], onViewDetail, onAcknowledge,
   const unreadCount = alerts.filter((a) => !a.acknowledged).length;
 
   return (
-    <GlassCard className="p-5" delay={0.2}>
+    <GlassCard className="p-3 md:p-5" delay={0.2}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-white/60" />

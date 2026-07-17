@@ -39,7 +39,7 @@ function MachineCard({ machineId, sensors, prediction, index }) {
       hover
       glow={healthScore !== null && healthScore < 50 ? "red" : healthScore !== null && healthScore < 75 ? "amber" : "emerald"}
       delay={index * 0.05}
-      className="p-5"
+      className="p-3 md:p-5"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -67,7 +67,7 @@ function MachineCard({ machineId, sensors, prediction, index }) {
         )}
       </div>
 
-      <div className="grid grid-cols-5 gap-2 mb-4">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 md:gap-2 mb-3 md:mb-4">
         {sensorConfig.map((s) => {
           const val = sensors?.[s.key];
           const numVal = val !== undefined && val !== null ? Number(val) : null;
@@ -126,10 +126,10 @@ export default function MachineMonitoring({ history, prediction, currentData }) 
   const machineIds = ["M001"];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Machine Monitoring</h1>
-        <p className="text-xs text-white/40 mt-1">Real-time status and sensor monitoring for all registered machines</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Machine Monitoring</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Real-time status and sensor monitoring for all registered machines</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

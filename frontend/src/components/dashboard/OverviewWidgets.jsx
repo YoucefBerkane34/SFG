@@ -25,7 +25,7 @@ const COLORS = ["#10B981", "#F59E0B", "#EF4444"];
 
 export function FactoryOverviewCard({ stats }) {
   return (
-    <GlassCard className="p-5" delay={0.05}>
+    <GlassCard className="p-3 md:p-5" delay={0.05}>
       <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Factory Overview</h3>
       <div className="grid grid-cols-2 gap-4">
         {OVERVIEW_STATS.map((s) => (

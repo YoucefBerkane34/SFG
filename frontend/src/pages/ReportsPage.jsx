@@ -250,13 +250,13 @@ export default function ReportsPage({ history, alerts, stats }) {
   }, [printData, filtered, normalCount, warningCount, failureCount, alerts.length]);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
-      <div className="flex items-center justify-between">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 max-w-[1400px]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-display font-bold text-white">Reports</h1>
-          <p className="text-xs text-white/40 mt-1">Export and review historical data</p>
+          <h1 className="text-lg md:text-xl font-display font-bold text-white">Reports</h1>
+          <p className="text-[10px] md:text-xs text-white/40 mt-1">Export and review historical data</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <select
             value={printRange}
             onChange={(e) => setPrintRange(e.target.value)}
@@ -276,7 +276,7 @@ export default function ReportsPage({ history, alerts, stats }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4">
         {[
           { label: "Total Records", value: history.length, color: "#3B82F6" },
           { label: "Normal", value: normalCount, color: "#10B981" },
@@ -294,8 +294,8 @@ export default function ReportsPage({ history, alerts, stats }) {
         ))}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="glass-input flex items-center gap-2 flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="glass-input flex items-center gap-2 flex-1 w-full sm:max-w-md">
           <Search className="w-4 h-4 text-white/30" />
           <input
             value={search}

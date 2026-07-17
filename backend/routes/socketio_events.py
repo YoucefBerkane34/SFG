@@ -10,7 +10,14 @@ from backend.ai.model_manager import ModelManager
 from backend.utils.logger import logger
 
 async_mode = os.getenv("ASYNC_MODE", "eventlet" if os.name != "nt" else "threading")
-socketio = SocketIO(cors_allowed_origins="*", async_mode=async_mode)
+socketio = SocketIO(
+    cors_allowed_origins="*",
+    async_mode=async_mode,
+    logger=False,
+    engineio_logger=False,
+    ping_timeout=60,
+    ping_interval=25,
+)
 model_mgr = ModelManager()
 ingestion = DataIngestion()
 sim_thread = None

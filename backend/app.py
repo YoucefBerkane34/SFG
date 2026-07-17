@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 
@@ -11,7 +12,7 @@ from backend.utils.logger import logger
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     db.init_app(app)
     with app.app_context():
@@ -28,4 +29,5 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=True)

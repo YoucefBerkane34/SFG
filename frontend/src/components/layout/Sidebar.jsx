@@ -11,6 +11,7 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  X,
   Shield,
   User,
 } from "lucide-react";
@@ -33,10 +34,114 @@ const bottomItems = [
   { icon: HelpCircle, label: "Help", key: "help" },
 ];
 
-export default function Sidebar() {
-  const { activePage, setActivePage, sidebarCollapsed, toggleSidebar } = useApp();
+export default function Sidebar({ mobile = false }) {
+  const {
+    activePage,
+    setActivePage,
+    sidebarCollapsed,
+    toggleSidebar,
+    closeMobileSidebar,
+  } = useApp();
   const { alerts } = useSocket();
   const unreadCount = alerts.filter((a) => !a.acknowledged).length;
+
+  const handleNav = (key) => {
+    setActivePage(key);
+    if (mobile) closeMobileSidebar();
+  };
+
+  if (mobile) {
+    return (
+      <motion.aside
+        initial={{ x: -260 }}
+        animate={{ x: 0 }}
+        exit={{ x: -260 }}
+        transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="glass-sidebar h-screen flex flex-col fixed left-0 top-0 z-50 w-[260px]"
+      >
+        <div className="flex items-center justify-between px-4 h-16 border-b border-white/[0.06] shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{
+                background: `linear-gradient(135deg, var(--accent), var(--accent-light))`,
+                boxShadow: `0 0 16px rgba(var(--accent-rgb), 0.3)`,
+              }}
+            >
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div className="whitespace-nowrap">
+              <div className="text-sm font-display font-bold gradient-text">SmartFactory</div>
+              <div className="text-[10px] text-white/30">Guardian AI</div>
+            </div>
+          </div>
+          <button
+            onClick={closeMobileSidebar}
+            className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = activePage === item.key;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleNav(item.key)}
+                className={`relative w-full flex items-center gap-3 rounded-xl transition-all duration-200 px-3 h-10`}
+                style={{
+                  background: isActive ? `rgba(var(--accent-rgb), 0.1)` : undefined,
+                  color: isActive ? `var(--accent-light)` : undefined,
+                }}
+              >
+                {isActive && (
+                  <div
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                    style={{ background: `var(--accent)` }}
+                  />
+                )}
+                <Icon className="w-[18px] h-[18px] shrink-0" />
+                <span className="text-[13px] font-medium whitespace-nowrap">
+                  {item.label}
+                </span>
+                {item.key === "alerts" && unreadCount > 0 && (
+                  <span className="absolute right-2 bg-danger-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-glow-red">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="px-2 pb-1 space-y-0.5 border-t border-white/[0.06] pt-2">
+          {bottomItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activePage === item.key;
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleNav(item.key)}
+                className={`w-full flex items-center gap-3 rounded-xl px-3 h-10 transition-all duration-200`}
+                style={{
+                  background: isActive ? `rgba(var(--accent-rgb), 0.1)` : undefined,
+                  color: isActive ? `var(--accent-light)` : undefined,
+                }}
+              >
+                <Icon className="w-[18px] h-[18px] shrink-0" />
+                <span className="text-[13px] font-medium whitespace-nowrap">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </motion.aside>
+    );
+  }
 
   return (
     <motion.aside

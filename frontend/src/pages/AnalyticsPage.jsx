@@ -49,7 +49,7 @@ function SensorChart({ sensor, data, meta }) {
   const chartData = data.slice(-60).map((h, i) => ({ idx: i, [sensor]: h[sensor] || 0 }));
 
   return (
-    <GlassCard className="p-5" delay={0.05}>
+    <GlassCard className="p-3 md:p-5" delay={0.05}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-white">{meta.label}</h3>
         <span className="text-[10px] text-white/30">{meta.unit}</span>
@@ -117,20 +117,20 @@ export default function AnalyticsPage({ history, alerts }) {
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-xl font-display font-bold text-white">Analytics</h1>
-        <p className="text-xs text-white/40 mt-1">Trend analysis and sensor comparison</p>
+        <h1 className="text-lg md:text-xl font-display font-bold text-white">Analytics</h1>
+        <p className="text-[10px] md:text-xs text-white/40 mt-1">Trend analysis and sensor comparison</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {Object.entries(sensorMeta).map(([key, meta], i) => (
           <SensorChart key={key} sensor={key} data={history} meta={meta} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard className="p-5" delay={0.3}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <GlassCard className="p-3 md:p-5" delay={0.3}>
           <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Sensor Load Comparison</h3>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={radarData}>
@@ -158,7 +158,7 @@ export default function AnalyticsPage({ history, alerts }) {
           </ResponsiveContainer>
         </GlassCard>
 
-        <GlassCard className="p-5" delay={0.35}>
+        <GlassCard className="p-3 md:p-5" delay={0.35}>
           <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Weekly Activity</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={weeklyData}>

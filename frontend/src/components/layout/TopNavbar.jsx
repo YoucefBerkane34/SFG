@@ -15,12 +15,21 @@ import {
   Settings,
   LogOut,
   UserCircle,
+  Menu,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useSocket } from "../../context/SocketContext";
 
 export default function TopNavbar() {
-  const { factory, searchOpen, setSearchOpen, setActivePage, user, logout } = useApp();
+  const {
+    factory,
+    searchOpen,
+    setSearchOpen,
+    setActivePage,
+    user,
+    logout,
+    toggleMobileSidebar,
+  } = useApp();
   const { connected, simulating, startSimulation, stopSimulation, alerts } = useSocket();
   const [time, setTime] = useState(new Date());
   const [notifOpen, setNotifOpen] = useState(false);
@@ -59,27 +68,35 @@ export default function TopNavbar() {
   };
 
   return (
-    <header className="glass-navbar h-16 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-4">
+    <header className="glass-navbar h-14 md:h-16 flex items-center justify-between px-3 md:px-6 sticky top-0 z-30">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={toggleMobileSidebar}
+          className="md:hidden btn-ghost p-2 -ml-1"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <div className="flex items-center gap-2 text-white/60">
-          <Factory className="w-4 h-4" />
-          <span className="text-sm font-medium hidden md:block">{factory}</span>
+          <Factory className="w-4 h-4 shrink-0" />
+          <span className="text-sm font-medium hidden lg:block">{factory}</span>
         </div>
-        <div className="h-4 w-px bg-white/10 hidden md:block" />
+        <div className="h-4 w-px bg-white/10 hidden lg:block" />
         <div className="flex items-center gap-2">
           <button
             onClick={simulating ? stopSimulation : () => startSimulation("M001")}
             disabled={!connected}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 disabled:opacity-40 ${
+            className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-medium transition-all duration-300 disabled:opacity-40 ${
               simulating
                 ? "bg-danger-500/15 text-danger-400 hover:bg-danger-500/25 border border-danger-500/20"
                 : "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20"
             }`}
           >
             {simulating ? (
-              <><Square className="w-3 h-3" /> Stop</>
+              <><Square className="w-3 h-3" /> <span className="hidden sm:inline">Stop</span></>
             ) : (
-              <><Play className="w-3 h-3" /> Start</>
+              <><Play className="w-3 h-3" /> <span className="hidden sm:inline">Start</span></>
             )}
           </button>
           {simulating && (
@@ -91,17 +108,17 @@ export default function TopNavbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 text-xs text-white/40 mr-2 hidden md:flex">
+      <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-1.5 text-xs text-white/40 mr-1 md:mr-2 hidden md:flex">
           <Clock className="w-3.5 h-3.5" />
           <span className="font-mono tabular-nums">
             {time.toLocaleTimeString("en-US", { hour12: false })}
           </span>
         </div>
 
-        <div className="h-4 w-px bg-white/10" />
+        <div className="h-4 w-px bg-white/10 hidden md:block" />
 
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs hidden md:flex">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs hidden lg:flex">
           {connected ? (
             <>
               <Wifi className="w-3.5 h-3.5 text-emerald-400" />
@@ -115,11 +132,11 @@ export default function TopNavbar() {
           )}
         </div>
 
-        <div className="h-4 w-px bg-white/10" />
+        <div className="h-4 w-px bg-white/10 hidden md:block" />
 
         <button
           onClick={() => setSearchOpen(!searchOpen)}
-          className="btn-ghost p-2"
+          className="btn-ghost p-1.5 md:p-2"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -127,7 +144,7 @@ export default function TopNavbar() {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-            className="btn-ghost p-2 relative"
+            className="btn-ghost p-1.5 md:p-2 relative"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -142,7 +159,7 @@ export default function TopNavbar() {
                 initial={{ opacity: 0, y: -8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                className="absolute right-0 top-12 w-80 glass-card p-4 shadow-premium"
+                className="absolute right-0 top-12 w-72 md:w-80 glass-card p-4 shadow-premium"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-white">Notifications</span>
@@ -174,7 +191,7 @@ export default function TopNavbar() {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-            className="flex items-center gap-2 btn-ghost py-1.5 px-2"
+            className="flex items-center gap-1.5 md:gap-2 btn-ghost py-1.5 px-1.5 md:px-2"
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-electric-500 to-cyan-500 flex items-center justify-center">
               <User className="w-3.5 h-3.5 text-white" />
@@ -232,7 +249,7 @@ export default function TopNavbar() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-16 left-0 right-0 px-6 pb-4"
+            className="absolute top-14 md:top-16 left-0 right-0 px-3 md:px-6 pb-4"
           >
             <div className="glass-input flex items-center gap-3">
               <Search className="w-4 h-4 text-white/40" />

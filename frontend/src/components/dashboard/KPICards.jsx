@@ -86,7 +86,7 @@ function MiniSparkline({ data, color }) {
 export default function KPICards({ data, sensorHistory }) {
   const hist = sensorHistory || {};
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-4">
       {sensors.map((s, i) => {
         const val = data?.[s.key];
         const Icon = s.icon;
@@ -115,15 +115,15 @@ export default function KPICards({ data, sensorHistory }) {
             hover
             glow={status === "critical" ? "red" : status === "warning" ? "amber" : "blue"}
             delay={i * 0.05}
-            className={`p-4 bg-gradient-to-br ${statusColor} border ${status === "critical" ? "animate-glow-pulse" : ""}`}
+            className={`p-3 md:p-4 bg-gradient-to-br ${statusColor} border ${status === "critical" ? "animate-glow-pulse" : ""}`}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center`}
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br flex items-center justify-center`}
                   style={{ background: `linear-gradient(135deg, ${s.gradient[0]}20, ${s.gradient[1]}10)` }}>
-                  <Icon className="w-4 h-4" style={{ color: s.gradient[0] }} />
+                  <Icon className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: s.gradient[0] }} />
                 </div>
-                <span className="text-[11px] text-white/40 uppercase tracking-wider font-medium">
+                <span className="text-[9px] md:text-[11px] text-white/40 uppercase tracking-wider font-medium">
                   {s.label}
                 </span>
               </div>
@@ -132,7 +132,7 @@ export default function KPICards({ data, sensorHistory }) {
               )}
             </div>
             <div className="flex items-baseline gap-1.5 mt-2">
-              <span className="text-2xl font-display font-bold text-white">
+              <span className="text-xl md:text-2xl font-display font-bold text-white">
                 {numVal !== null ? (
                   <AnimatedCounter value={numVal} decimals={1} />
                 ) : (
