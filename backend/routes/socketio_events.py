@@ -1,8 +1,8 @@
 import os
 import threading
+import time as _time
 from datetime import datetime
 from flask_socketio import SocketIO, emit
-
 from backend.config import Config
 from backend.models.database import db, Machine, SensorData, Prediction, Alert
 from backend.data.ingestion import DataIngestion
@@ -20,12 +20,15 @@ socketio = SocketIO(
 )
 model_mgr = ModelManager()
 ingestion = DataIngestion()
-sim_thread = None
-_thread_lock = threading.Lock()
+_sim_lock = threading.Lock()
+_simulation_active = False
+
+_app = None
 
 
 def register_socketio_events(app):
-    global model_mgr, ingestion, sim_thread
+    global model_mgr, ingestion, _app
+    _app = app
 
     with app.app_context():
         ensure_machine_exists("M001")
@@ -45,7 +48,7 @@ def register_socketio_events(app):
 
     @socketio.on("start_simulation")
     def start_simulation(data):
-        global sim_thread
+        global _simulation_active
         machine_id = data.get("machine_id", "M001")
 
         if not model_mgr.ready:
@@ -57,128 +60,170 @@ def register_socketio_events(app):
             except Exception as e:
                 logger.error(f"On-demand model load FAILED: {e}", exc_info=True)
 
-        with _thread_lock:
-            if sim_thread and sim_thread.is_alive():
-                logger.info("Already running, stopping old thread first")
-                ingestion.stop_simulation()
-                sim_thread.join(timeout=3)
-                sim_thread = None
+        if _simulation_active:
+            logger.info("Already running, ignoring duplicate start")
+            emit("simulation_status", {"status": "started"})
+            return
 
         ingestion._running = True
+        _simulation_active = True
+        logger.info(f"[STREAM] Starting simulation for {machine_id}")
 
-        def stream():
-            consecutive_errors = 0
-            for record in ingestion.simulate_live_stream(machine_id=machine_id):
-                if not ingestion._running:
-                    break
-                try:
-                    result = None
-                    alert_msg = None
-
-                    with app.app_context():
-                        ensure_machine_exists(machine_id)
-
-                        sensor = SensorData(
-                            machine_id=record["machine_id"],
-                            timestamp=record["timestamp"],
-                            temperature=record.get("temperature"),
-                            pressure=record.get("pressure"),
-                            vibration_level=record.get("vibration_level"),
-                            humidity=record.get("humidity"),
-                            power_consumption=record.get("power_consumption"),
-                            failure_status=record.get("failure_status", 0),
-                        )
-                        db.session.add(sensor)
-                        db.session.commit()
-
-                    try:
-                        result = model_mgr.predict(record)
-                    except Exception as e:
-                        logger.error(f"Prediction error: {e}", exc_info=True)
-                        result = {
-                            "predicted_class": 0,
-                            "predicted_label": "Normal",
-                            "confidence": 0.0,
-                            "timestamp": datetime.utcnow().isoformat(),
-                        }
-
-                    if not result.get("buffering"):
-                        try:
-                            with app.app_context():
-                                pred = Prediction(
-                                    machine_id=record["machine_id"],
-                                    timestamp=record["timestamp"],
-                                    predicted_class=result["predicted_class"],
-                                    predicted_label=result["predicted_label"],
-                                    confidence=result["confidence"],
-                                    features=str(
-                                        {k: record.get(k) for k in Config.SENSOR_FIELDS}
-                                    ),
-                                )
-                                db.session.add(pred)
-                                db.session.commit()
-                        except Exception as e:
-                            logger.error(f"Prediction DB save error: {e}", exc_info=True)
-                            try:
-                                db.session.rollback()
-                            except Exception:
-                                pass
-
-                    if not result.get("buffering") and result["predicted_class"] == 2:
-                        try:
-                            with app.app_context():
-                                failure_cause = identify_failure_cause(record)
-                                alert_msg = Alert(
-                                    machine_id=record["machine_id"],
-                                    timestamp=record["timestamp"],
-                                    severity="critical",
-                                    message=f"Failure on {record['machine_id']}: {failure_cause}",
-                                )
-                                db.session.add(alert_msg)
-                                db.session.commit()
-                        except Exception as e:
-                            logger.error(f"Alert DB save error: {e}", exc_info=True)
-                            try:
-                                db.session.rollback()
-                            except Exception:
-                                pass
-
-                    socketio.emit("sensor_update", {
-                        "machine_id": record["machine_id"],
-                        "timestamp": record["timestamp"].isoformat(),
-                        "sensors": {
-                            k: record.get(k)
-                            for k in Config.SENSOR_FIELDS
-                        },
-                        "prediction": result,
-                        "alert": {
-                            "id": alert_msg.id,
-                            "severity": alert_msg.severity,
-                            "message": alert_msg.message,
-                        }
-                        if alert_msg else None,
-                    })
-                    consecutive_errors = 0
-                except Exception as e:
-                    consecutive_errors += 1
-                    logger.error(f"Stream record error ({consecutive_errors}): {e}", exc_info=True)
-                    try:
-                        db.session.rollback()
-                    except Exception:
-                        pass
-                    if consecutive_errors >= 10:
-                        logger.error("Too many consecutive errors, stopping stream")
-                        break
-
-        with _thread_lock:
-            sim_thread = threading.Thread(target=stream, daemon=True)
-            sim_thread.start()
+        socketio.start_background_task(_run_stream, machine_id)
         emit("simulation_status", {"status": "started"})
 
     @socketio.on("stop_simulation")
     def stop_simulation():
+        global _simulation_active
         ingestion.stop_simulation()
+        _simulation_active = False
+        logger.info("[STREAM] Stop requested")
         emit("simulation_status", {"status": "stopped"})
+
+
+def _run_stream(machine_id):
+    global _simulation_active
+    reading_count = 0
+    ctx = _app.app_context()
+    ctx.push()
+    try:
+        ensure_machine_exists(machine_id)
+        logger.info("[STREAM] App context pushed, machine ensured. Starting loop.")
+
+        for record in ingestion.simulate_live_stream(machine_id=machine_id):
+            if not ingestion._running:
+                logger.info("[STREAM] ingestion._running is False, breaking")
+                break
+
+            reading_count += 1
+            result = None
+            alert_msg = None
+            step_log = f"[STREAM] reading={reading_count}"
+
+            try:
+                sensor = SensorData(
+                    machine_id=record["machine_id"],
+                    timestamp=record["timestamp"],
+                    temperature=record.get("temperature"),
+                    pressure=record.get("pressure"),
+                    vibration_level=record.get("vibration_level"),
+                    humidity=record.get("humidity"),
+                    power_consumption=record.get("power_consumption"),
+                    failure_status=record.get("failure_status", 0),
+                )
+                db.session.add(sensor)
+                db.session.commit()
+            except Exception as e:
+                logger.error(f"{step_log} DB sensor write FAILED: {e}", exc_info=True)
+                try:
+                    db.session.rollback()
+                except Exception:
+                    pass
+
+            try:
+                t0 = _time.monotonic()
+                result = model_mgr.predict(record)
+                elapsed = _time.monotonic() - t0
+                buffering = result.get("buffering", False)
+                label = result.get("predicted_label", "?")
+                conf = result.get("confidence", 0)
+                logger.info(
+                    f"{step_log} predict OK in {elapsed:.2f}s | "
+                    f"buffering={buffering} label={label} conf={conf:.3f}"
+                )
+            except Exception as e:
+                logger.error(f"{step_log} predict CRASHED: {e}", exc_info=True)
+                result = {
+                    "predicted_class": 0,
+                    "predicted_label": "Normal",
+                    "confidence": 0.0,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+
+            if result and not result.get("buffering"):
+                try:
+                    pred = Prediction(
+                        machine_id=record["machine_id"],
+                        timestamp=record["timestamp"],
+                        predicted_class=result["predicted_class"],
+                        predicted_label=result["predicted_label"],
+                        confidence=result["confidence"],
+                        features=str(
+                            {k: record.get(k) for k in Config.SENSOR_FIELDS}
+                        ),
+                    )
+                    db.session.add(pred)
+                    db.session.commit()
+                except Exception as e:
+                    logger.error(f"{step_log} DB prediction write FAILED: {e}", exc_info=True)
+                    try:
+                        db.session.rollback()
+                    except Exception:
+                        pass
+
+                if result.get("predicted_class") == 2:
+                    try:
+                        failure_cause = identify_failure_cause(record)
+                        alert_msg = Alert(
+                            machine_id=record["machine_id"],
+                            timestamp=record["timestamp"],
+                            severity="critical",
+                            message=f"Failure on {record['machine_id']}: {failure_cause}",
+                        )
+                        db.session.add(alert_msg)
+                        db.session.commit()
+                        logger.info(f"{step_log} Alert created: {failure_cause}")
+                    except Exception as e:
+                        logger.error(f"{step_log} DB alert write FAILED: {e}", exc_info=True)
+                        try:
+                            db.session.rollback()
+                        except Exception:
+                            pass
+
+            try:
+                emit_payload = {
+                    "machine_id": record["machine_id"],
+                    "timestamp": record["timestamp"].isoformat(),
+                    "sensors": {
+                        k: record.get(k) for k in Config.SENSOR_FIELDS
+                    },
+                    "prediction": result,
+                }
+                if alert_msg:
+                    try:
+                        emit_payload["alert"] = {
+                            "id": alert_msg.id,
+                            "severity": alert_msg.severity,
+                            "message": alert_msg.message,
+                        }
+                    except Exception:
+                        emit_payload["alert"] = {
+                            "id": None,
+                            "severity": "critical",
+                            "message": alert_msg.message,
+                        }
+                else:
+                    emit_payload["alert"] = None
+
+                socketio.emit("sensor_update", emit_payload)
+            except Exception as e:
+                logger.error(f"{step_log} socketio.emit FAILED: {e}", exc_info=True)
+
+            if reading_count % 10 == 0:
+                logger.info(f"[STREAM] progress: {reading_count} readings processed")
+
+    except GeneratorExit:
+        logger.info("[STREAM] Generator closed")
+    except Exception as e:
+        logger.error(f"[STREAM] Unhandled stream error: {e}", exc_info=True)
+    finally:
+        _simulation_active = False
+        try:
+            db.session.remove()
+        except Exception:
+            pass
+        ctx.pop()
+        logger.info(f"[STREAM] Done. Total readings: {reading_count}")
 
 
 def ensure_machine_exists(machine_id):

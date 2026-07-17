@@ -53,7 +53,16 @@ class CNNFeatureExtractor:
     def extract_features(self, X):
         if self._extractor is None:
             self._build_extractor()
-        return self._extractor.predict(X, verbose=0)
+
+        def _do_predict():
+            return self._extractor.predict(X, verbose=0)
+
+        try:
+            import eventlet.debug
+            from eventlet import tpool
+            return tpool.execute(_do_predict)
+        except Exception:
+            return _do_predict()
 
     def train(
         self,
