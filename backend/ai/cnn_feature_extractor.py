@@ -1,5 +1,6 @@
 import os
 os.environ.setdefault("KERAS_BACKEND", os.environ.get("KERAS_BACKEND", "tensorflow"))
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 
 import keras
 from keras import layers, models, callbacks
@@ -7,9 +8,16 @@ import numpy as np
 
 from backend.utils.logger import logger
 
+try:
+    import tensorflow as tf
+    tf.config.threading.set_intra_op_parallelism_threads(1)
+    tf.config.threading.set_inter_op_parallelism_threads(1)
+except Exception:
+    pass
+
 
 class CNNFeatureExtractor:
-    def __init__(self, seq_length=10, n_features=5, latent_dim=32):
+    def __init__(self, seq_length=10, n_features=5, latent_dim=16):
         self.seq_length = seq_length
         self.n_features = n_features
         self.latent_dim = latent_dim
@@ -18,10 +26,7 @@ class CNNFeatureExtractor:
 
     def build(self):
         inputs = layers.Input(shape=(self.seq_length, self.n_features))
-        x = layers.Conv1D(64, 3, activation="relu", padding="same")(inputs)
-        x = layers.BatchNormalization()(x)
-        x = layers.MaxPooling1D(2)(x)
-        x = layers.Conv1D(128, 3, activation="relu", padding="same")(x)
+        x = layers.Conv1D(32, 3, activation="relu", padding="same")(inputs)
         x = layers.BatchNormalization()(x)
         x = layers.GlobalAveragePooling1D()(x)
         x = layers.Dense(self.latent_dim, activation="relu", name="feature_dense")(x)
