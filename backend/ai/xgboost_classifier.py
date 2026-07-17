@@ -40,17 +40,10 @@ class XGBoostClassifier:
         return self.model.predict_proba(X)
 
     def predict_with_confidence(self, X):
-        def _do_predict():
-            probs = self.predict_proba(X)
-            preds = np.argmax(probs, axis=1)
-            confs = np.max(probs, axis=1)
-            return preds, confs
-
-        try:
-            from eventlet import tpool
-            return tpool.execute(_do_predict)
-        except Exception:
-            return _do_predict()
+        probs = self.predict_proba(X)
+        preds = np.argmax(probs, axis=1)
+        confs = np.max(probs, axis=1)
+        return preds, confs
 
     def save(self, path):
         self.model._estimator_type = "classifier"

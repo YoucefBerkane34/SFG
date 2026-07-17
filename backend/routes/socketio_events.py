@@ -1,8 +1,8 @@
 import os
-import threading
 import time as _time
 from datetime import datetime
 from flask_socketio import SocketIO, emit
+
 from backend.config import Config
 from backend.models.database import db, Machine, SensorData, Prediction, Alert
 from backend.data.ingestion import DataIngestion
@@ -20,9 +20,7 @@ socketio = SocketIO(
 )
 model_mgr = ModelManager()
 ingestion = DataIngestion()
-_sim_lock = threading.Lock()
 _simulation_active = False
-
 _app = None
 
 
@@ -40,7 +38,7 @@ def register_socketio_events(app):
 
     @socketio.on("connect")
     def handle_connect():
-        logger.info(f"Client connected")
+        logger.info("Client connected")
 
     @socketio.on("disconnect")
     def handle_disconnect():
@@ -50,15 +48,6 @@ def register_socketio_events(app):
     def start_simulation(data):
         global _simulation_active
         machine_id = data.get("machine_id", "M001")
-
-        if not model_mgr.ready:
-            logger.info("Models not ready, attempting load_or_train now...")
-            try:
-                with app.app_context():
-                    model_mgr.load_or_train()
-                    logger.info("ModelManager loaded on-demand")
-            except Exception as e:
-                logger.error(f"On-demand model load FAILED: {e}", exc_info=True)
 
         if _simulation_active:
             logger.info("Already running, ignoring duplicate start")
@@ -88,17 +77,16 @@ def _run_stream(machine_id):
     ctx.push()
     try:
         ensure_machine_exists(machine_id)
-        logger.info("[STREAM] App context pushed, machine ensured. Starting loop.")
+        logger.info("[STREAM] Context ready, starting loop")
 
         for record in ingestion.simulate_live_stream(machine_id=machine_id):
             if not ingestion._running:
-                logger.info("[STREAM] ingestion._running is False, breaking")
+                logger.info("[STREAM] ingestion stopped, breaking")
                 break
 
             reading_count += 1
             result = None
             alert_msg = None
-            step_log = f"[STREAM] reading={reading_count}"
 
             try:
                 sensor = SensorData(
@@ -114,7 +102,7 @@ def _run_stream(machine_id):
                 db.session.add(sensor)
                 db.session.commit()
             except Exception as e:
-                logger.error(f"{step_log} DB sensor write FAILED: {e}", exc_info=True)
+                logger.error(f"[STREAM] read={reading_count} sensor DB error: {e}", exc_info=True)
                 try:
                     db.session.rollback()
                 except Exception:
@@ -127,12 +115,13 @@ def _run_stream(machine_id):
                 buffering = result.get("buffering", False)
                 label = result.get("predicted_label", "?")
                 conf = result.get("confidence", 0)
-                logger.info(
-                    f"{step_log} predict OK in {elapsed:.2f}s | "
-                    f"buffering={buffering} label={label} conf={conf:.3f}"
-                )
+                if reading_count <= 12 or reading_count % 10 == 0:
+                    logger.info(
+                        f"[STREAM] read={reading_count} predict {elapsed:.3f}s "
+                        f"buf={buffering} label={label} conf={conf:.3f}"
+                    )
             except Exception as e:
-                logger.error(f"{step_log} predict CRASHED: {e}", exc_info=True)
+                logger.error(f"[STREAM] read={reading_count} predict CRASHED: {e}", exc_info=True)
                 result = {
                     "predicted_class": 0,
                     "predicted_label": "Normal",
@@ -155,7 +144,7 @@ def _run_stream(machine_id):
                     db.session.add(pred)
                     db.session.commit()
                 except Exception as e:
-                    logger.error(f"{step_log} DB prediction write FAILED: {e}", exc_info=True)
+                    logger.error(f"[STREAM] read={reading_count} prediction DB error: {e}", exc_info=True)
                     try:
                         db.session.rollback()
                     except Exception:
@@ -172,9 +161,9 @@ def _run_stream(machine_id):
                         )
                         db.session.add(alert_msg)
                         db.session.commit()
-                        logger.info(f"{step_log} Alert created: {failure_cause}")
+                        logger.info(f"[STREAM] read={reading_count} Alert: {failure_cause}")
                     except Exception as e:
-                        logger.error(f"{step_log} DB alert write FAILED: {e}", exc_info=True)
+                        logger.error(f"[STREAM] read={reading_count} alert DB error: {e}", exc_info=True)
                         try:
                             db.session.rollback()
                         except Exception:
@@ -207,15 +196,12 @@ def _run_stream(machine_id):
 
                 socketio.emit("sensor_update", emit_payload)
             except Exception as e:
-                logger.error(f"{step_log} socketio.emit FAILED: {e}", exc_info=True)
-
-            if reading_count % 10 == 0:
-                logger.info(f"[STREAM] progress: {reading_count} readings processed")
+                logger.error(f"[STREAM] read={reading_count} emit FAILED: {e}", exc_info=True)
 
     except GeneratorExit:
         logger.info("[STREAM] Generator closed")
     except Exception as e:
-        logger.error(f"[STREAM] Unhandled stream error: {e}", exc_info=True)
+        logger.error(f"[STREAM] Unhandled: {e}", exc_info=True)
     finally:
         _simulation_active = False
         try:
@@ -243,7 +229,7 @@ def identify_failure_cause(record):
 
     causes = []
     if temp > 90:
-        causes.append(f"Temperature {temp:.0f}°C (critical)")
+        causes.append(f"Temperature {temp:.0f}\u00b0C (critical)")
     if pressure > 150:
         causes.append(f"Pressure {pressure:.0f} kPa (overload)")
     if vibration > 6:
