@@ -18,9 +18,9 @@ class XGBoostClassifier:
             subsample=0.8,
             colsample_bytree=0.8,
             eval_metric="mlogloss",
-            use_label_encoder=False,
             random_state=42,
         )
+        self.model._estimator_type = "classifier"
         eval_set = [(X_train, y_train)]
         if X_val is not None:
             eval_set.append((X_val, y_val))
@@ -46,10 +46,12 @@ class XGBoostClassifier:
         return preds, confs
 
     def save(self, path):
+        self.model._estimator_type = "classifier"
         self.model.save_model(path)
         logger.info(f"XGBoost model saved to {path}")
 
     def load(self, path):
         self.model = xgb.XGBClassifier()
+        self.model._estimator_type = "classifier"
         self.model.load_model(path)
         logger.info(f"XGBoost model loaded from {path}")
