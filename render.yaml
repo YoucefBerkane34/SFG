@@ -15,7 +15,7 @@ services:
           name: smartfactory-db
           property: connectionString
       - key: KERAS_BACKEND
-        value: "jax"
+        value: "tensorflow"
       - key: TF_CPP_MIN_LOG_LEVEL
         value: "3"
       - key: ASYNC_MODE

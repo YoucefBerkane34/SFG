@@ -1,5 +1,5 @@
 import os
-os.environ["KERAS_BACKEND"] = "jax"
+os.environ.setdefault("KERAS_BACKEND", os.environ.get("KERAS_BACKEND", "tensorflow"))
 
 import keras
 from keras import layers, models, callbacks
