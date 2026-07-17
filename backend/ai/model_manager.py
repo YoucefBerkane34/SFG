@@ -14,6 +14,7 @@ from backend.utils.logger import logger
 class ModelManager:
     def __init__(self):
         self.models_dir = Config.MODELS_DIR
+        os.makedirs(self.models_dir, exist_ok=True)
         self.cnn = CNNFeatureExtractor()
         self.xgb = XGBoostClassifier()
         self.pipeline = PreprocessingPipeline()

@@ -33,7 +33,7 @@ def register_socketio_events(app):
             model_mgr.load_or_train()
             logger.info("ModelManager ready on startup")
         except Exception as e:
-            logger.warning(f"ModelManager init skipped: {e}")
+            logger.error(f"ModelManager init FAILED: {e}", exc_info=True)
 
     @socketio.on("connect")
     def handle_connect():
@@ -47,6 +47,15 @@ def register_socketio_events(app):
     def start_simulation(data):
         global sim_thread
         machine_id = data.get("machine_id", "M001")
+
+        if not model_mgr.ready:
+            logger.info("Models not ready, attempting load_or_train now...")
+            try:
+                with app.app_context():
+                    model_mgr.load_or_train()
+                    logger.info("ModelManager loaded on-demand")
+            except Exception as e:
+                logger.error(f"On-demand model load FAILED: {e}", exc_info=True)
 
         with _thread_lock:
             if sim_thread and sim_thread.is_alive():
