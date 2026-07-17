@@ -82,7 +82,7 @@ export function SocketProvider({ children }) {
     if (!socket) return;
     socket.emit("start_simulation", { machine_id: machineId });
     setSimulating(true);
-    dataTimeoutRef.current = setTimeout(() => setSimulating(false), 5000);
+    dataTimeoutRef.current = setTimeout(() => setSimulating(false), 30000);
   };
 
   const stopSimulation = () => {
