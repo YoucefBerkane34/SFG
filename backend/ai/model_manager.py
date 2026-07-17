@@ -36,6 +36,7 @@ class ModelManager:
             self.xgb.load(paths["xgb"])
             self.pipeline.load_scaler(paths["scaler"])
             self.ready = True
+            self._warmup()
             return
 
         if df is None:
@@ -53,6 +54,16 @@ class ModelManager:
         self.xgb.save(paths["xgb"])
         self.pipeline.save_scaler(paths["scaler"])
         self.ready = True
+        self._warmup()
+
+    def _warmup(self):
+        try:
+            dummy = np.zeros((1, self.pipeline.seq_length, len(Config.SENSOR_FIELDS)), dtype=np.float32)
+            cnn_feat = self.cnn.extract_features(dummy)
+            self.xgb.predict_with_confidence(cnn_feat)
+            logger.info("Model warm-up inference OK")
+        except Exception as e:
+            logger.error(f"Model warm-up failed: {e}", exc_info=True)
 
     def predict(self, sensor_record):
         if not self.ready:
@@ -74,16 +85,25 @@ class ModelManager:
                 "progress": f"{len(buf)}/{self.pipeline.seq_length}",
             }
 
-        seq = np.array([buf], dtype=np.float32)
-        cnn_feat = self.cnn.extract_features(seq)
-        pred, conf = self.xgb.predict_with_confidence(cnn_feat)
-        label = Config.FAILURE_CLASSES.get(int(pred[0]), "Unknown")
-        return {
-            "predicted_class": int(pred[0]),
-            "predicted_label": label,
-            "confidence": float(conf[0]),
-            "timestamp": datetime.utcnow().isoformat(),
-        }
+        try:
+            seq = np.array([buf], dtype=np.float32)
+            cnn_feat = self.cnn.extract_features(seq)
+            pred, conf = self.xgb.predict_with_confidence(cnn_feat)
+            label = Config.FAILURE_CLASSES.get(int(pred[0]), "Unknown")
+            return {
+                "predicted_class": int(pred[0]),
+                "predicted_label": label,
+                "confidence": float(conf[0]),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Model inference failed: {e}", exc_info=True)
+            return {
+                "predicted_class": 0,
+                "predicted_label": "Normal",
+                "confidence": 0.0,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
 
     def reset_buffer(self, machine_id=None):
         if machine_id:

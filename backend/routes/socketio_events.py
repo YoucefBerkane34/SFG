@@ -72,6 +72,9 @@ def register_socketio_events(app):
                 if not ingestion._running:
                     break
                 try:
+                    result = None
+                    alert_msg = None
+
                     with app.app_context():
                         ensure_machine_exists(machine_id)
 
@@ -88,58 +91,74 @@ def register_socketio_events(app):
                         db.session.add(sensor)
                         db.session.commit()
 
+                    try:
+                        result = model_mgr.predict(record)
+                    except Exception as e:
+                        logger.error(f"Prediction error: {e}", exc_info=True)
+                        result = {
+                            "predicted_class": 0,
+                            "predicted_label": "Normal",
+                            "confidence": 0.0,
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+
+                    if not result.get("buffering"):
                         try:
-                            result = model_mgr.predict(record)
+                            with app.app_context():
+                                pred = Prediction(
+                                    machine_id=record["machine_id"],
+                                    timestamp=record["timestamp"],
+                                    predicted_class=result["predicted_class"],
+                                    predicted_label=result["predicted_label"],
+                                    confidence=result["confidence"],
+                                    features=str(
+                                        {k: record.get(k) for k in Config.SENSOR_FIELDS}
+                                    ),
+                                )
+                                db.session.add(pred)
+                                db.session.commit()
                         except Exception as e:
-                            logger.error(f"Prediction error: {e}", exc_info=True)
-                            result = {
-                                "predicted_class": 0,
-                                "predicted_label": "Normal",
-                                "confidence": 0.0,
-                            }
+                            logger.error(f"Prediction DB save error: {e}", exc_info=True)
+                            try:
+                                db.session.rollback()
+                            except Exception:
+                                pass
 
-                        alert_msg = None
-                        if not result.get("buffering"):
-                            pred = Prediction(
-                                machine_id=record["machine_id"],
-                                timestamp=record["timestamp"],
-                                predicted_class=result["predicted_class"],
-                                predicted_label=result["predicted_label"],
-                                confidence=result["confidence"],
-                                features=str(
-                                    {k: record.get(k) for k in Config.SENSOR_FIELDS}
-                                ),
-                            )
-                            db.session.add(pred)
-                            db.session.commit()
+                    if not result.get("buffering") and result["predicted_class"] == 2:
+                        try:
+                            with app.app_context():
+                                failure_cause = identify_failure_cause(record)
+                                alert_msg = Alert(
+                                    machine_id=record["machine_id"],
+                                    timestamp=record["timestamp"],
+                                    severity="critical",
+                                    message=f"Failure on {record['machine_id']}: {failure_cause}",
+                                )
+                                db.session.add(alert_msg)
+                                db.session.commit()
+                        except Exception as e:
+                            logger.error(f"Alert DB save error: {e}", exc_info=True)
+                            try:
+                                db.session.rollback()
+                            except Exception:
+                                pass
 
-                        if not result.get("buffering") and result["predicted_class"] == 2:
-                            failure_cause = identify_failure_cause(record)
-                            alert_msg = Alert(
-                                machine_id=record["machine_id"],
-                                timestamp=record["timestamp"],
-                                severity="critical",
-                                message=f"Failure on {record['machine_id']}: {failure_cause}",
-                            )
-                            db.session.add(alert_msg)
-                            db.session.commit()
-
-                        socketio.emit("sensor_update", {
-                            "machine_id": record["machine_id"],
-                            "timestamp": record["timestamp"].isoformat(),
-                            "sensors": {
-                                k: record.get(k)
-                                for k in Config.SENSOR_FIELDS
-                            },
-                            "prediction": result,
-                            "alert": {
-                                "id": alert_msg.id,
-                                "severity": alert_msg.severity,
-                                "message": alert_msg.message,
-                            }
-                            if alert_msg else None,
-                        })
-                        consecutive_errors = 0
+                    socketio.emit("sensor_update", {
+                        "machine_id": record["machine_id"],
+                        "timestamp": record["timestamp"].isoformat(),
+                        "sensors": {
+                            k: record.get(k)
+                            for k in Config.SENSOR_FIELDS
+                        },
+                        "prediction": result,
+                        "alert": {
+                            "id": alert_msg.id,
+                            "severity": alert_msg.severity,
+                            "message": alert_msg.message,
+                        }
+                        if alert_msg else None,
+                    })
+                    consecutive_errors = 0
                 except Exception as e:
                     consecutive_errors += 1
                     logger.error(f"Stream record error ({consecutive_errors}): {e}", exc_info=True)
