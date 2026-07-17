@@ -15,6 +15,11 @@ venv/
 # Database (local dev)
 **/smartguardian.db
 
+# Trained models (retrained on server)
+models/*.h5
+models/*.json
+models/*.joblib
+
 # OS
 .DS_Store
 Thumbs.db
