@@ -87,24 +87,23 @@ class ModelManager:
             logger.error(f"Model warm-up failed: {e}", exc_info=True)
 
     def predict(self, sensor_record):
-        features = self.pipeline.transform_single(sensor_record) if self.pipeline else None
+        if not USE_ML or not self.pipeline:
+            return self._threshold_predict(sensor_record)
+
+        features = self.pipeline.transform_single(sensor_record)
         mid = sensor_record.get("machine_id", "_default")
         buf = self._buffers[mid]
+        buf.append(features)
+        if len(buf) > self.pipeline.seq_length:
+            buf.pop(0)
 
-        if features is not None:
-            buf.append(features)
-            if len(buf) > (self.pipeline.seq_length if self.pipeline else 10):
-                buf.pop(0)
-
-        seq_len = self.pipeline.seq_length if self.pipeline else 10
-
-        if len(buf) < seq_len:
+        if len(buf) < self.pipeline.seq_length:
             threshold_result = self._threshold_predict(sensor_record)
             threshold_result["buffering"] = True
-            threshold_result["progress"] = f"{len(buf)}/{seq_len}"
+            threshold_result["progress"] = f"{len(buf)}/{self.pipeline.seq_length}"
             return threshold_result
 
-        if USE_ML and self.ready and self.cnn and self.xgb and self.pipeline:
+        if self.ready and self.cnn and self.xgb:
             try:
                 seq = np.array([buf], dtype=np.float32)
                 cnn_feat = self.cnn.extract_features(seq)
