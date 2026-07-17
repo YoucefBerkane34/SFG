@@ -67,8 +67,11 @@ def register_socketio_events(app):
         ingestion._running = True
 
         def stream():
-            try:
-                for record in ingestion.simulate_live_stream(machine_id=machine_id):
+            consecutive_errors = 0
+            for record in ingestion.simulate_live_stream(machine_id=machine_id):
+                if not ingestion._running:
+                    break
+                try:
                     with app.app_context():
                         ensure_machine_exists(machine_id)
 
@@ -88,13 +91,14 @@ def register_socketio_events(app):
                         try:
                             result = model_mgr.predict(record)
                         except Exception as e:
-                            logger.error(f"Prediction error: {e}")
+                            logger.error(f"Prediction error: {e}", exc_info=True)
                             result = {
                                 "predicted_class": 0,
                                 "predicted_label": "Normal",
                                 "confidence": 0.0,
                             }
 
+                        alert_msg = None
                         if not result.get("buffering"):
                             pred = Prediction(
                                 machine_id=record["machine_id"],
@@ -109,7 +113,6 @@ def register_socketio_events(app):
                             db.session.add(pred)
                             db.session.commit()
 
-                        alert_msg = None
                         if not result.get("buffering") and result["predicted_class"] == 2:
                             failure_cause = identify_failure_cause(record)
                             alert_msg = Alert(
@@ -136,8 +139,17 @@ def register_socketio_events(app):
                             }
                             if alert_msg else None,
                         })
-            except Exception as e:
-                logger.error(f"Stream thread error: {e}")
+                        consecutive_errors = 0
+                except Exception as e:
+                    consecutive_errors += 1
+                    logger.error(f"Stream record error ({consecutive_errors}): {e}", exc_info=True)
+                    try:
+                        db.session.rollback()
+                    except Exception:
+                        pass
+                    if consecutive_errors >= 10:
+                        logger.error("Too many consecutive errors, stopping stream")
+                        break
 
         with _thread_lock:
             sim_thread = threading.Thread(target=stream, daemon=True)

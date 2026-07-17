@@ -33,8 +33,11 @@ export function SocketProvider({ children }) {
     s.on("sensor_update", (data) => {
       if (dataTimeoutRef.current) {
         clearTimeout(dataTimeoutRef.current);
-        dataTimeoutRef.current = null;
       }
+
+      setSimulating(true);
+
+      dataTimeoutRef.current = setTimeout(() => setSimulating(false), 30000);
 
       setCurrentData(data.sensors);
       setPrediction(data.prediction);
@@ -82,7 +85,7 @@ export function SocketProvider({ children }) {
     if (!socket) return;
     socket.emit("start_simulation", { machine_id: machineId });
     setSimulating(true);
-    dataTimeoutRef.current = setTimeout(() => setSimulating(false), 30000);
+    dataTimeoutRef.current = setTimeout(() => setSimulating(false), 60000);
   };
 
   const stopSimulation = () => {
