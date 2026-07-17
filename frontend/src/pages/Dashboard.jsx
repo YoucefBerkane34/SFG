@@ -1,198 +1,174 @@
-import { useState, useEffect, useRef } from "react";
-import { Play, Square, ArrowLeft } from "lucide-react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useSocket } from "../context/SocketContext";
-import Layout from "../components/Layout";
-import NetworkStatus from "../components/NetworkStatus";
-import KPICards from "../components/KPICards";
-import Charts from "../components/Charts";
-import AIPanel from "../components/AIPanel";
-import AlertsPanel from "../components/AlertsPanel";
-import HistoryPanel from "../components/HistoryPanel";
-import SensorDetailChart from "../components/SensorDetailChart";
-import AlertDetail from "../components/AlertDetail";
+import { useApp } from "../context/AppContext";
+import { motion, AnimatePresence } from "framer-motion";
+
+import KPICards from "../components/dashboard/KPICards";
+import SensorCharts from "../components/dashboard/SensorCharts";
+import AIPredictionPanel from "../components/dashboard/AIPredictionPanel";
+import AlertsWidget from "../components/dashboard/AlertsWidget";
+import HistoryWidget from "../components/dashboard/HistoryWidget";
+import {
+  FactoryOverviewCard,
+  MachineStatusPie,
+  AlertDistributionChart,
+  PowerConsumptionChart,
+} from "../components/dashboard/OverviewWidgets";
+import AlertDetail from "../components/dashboard/AlertDetail";
+import MachineMonitoring from "../components/dashboard/MachineMonitoring";
+
+import AIPredictionPage from "./AIPredictionPage";
+import AlertsPage from "./AlertsPage";
+import AnalyticsPage from "./AnalyticsPage";
+import HistoryPage from "./HistoryPage";
+import ReportsPage from "./ReportsPage";
+import SettingsPage from "./SettingsPage";
+import ProfilePage from "./ProfilePage";
+import HelpPage from "./HelpPage";
+
+const pageTransition = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+  transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+};
 
 export default function Dashboard() {
-  const { socket, connected } = useSocket();
-  const [simulating, setSimulating] = useState(false);
-  const [currentData, setCurrentData] = useState(null);
-  const [prediction, setPrediction] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview");
+  const {
+    connected,
+    simulating,
+    currentData,
+    prediction,
+    history,
+    alerts,
+    latestAlert,
+    startSimulation,
+    stopSimulation,
+    acknowledgeAlert,
+  } = useSocket();
+
+  const { activePage, setActivePage } = useApp();
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const historyRef = useRef([]);
-  const dataTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    if (Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const onSensorUpdate = (data) => {
-      if (dataTimeoutRef.current) {
-        clearTimeout(dataTimeoutRef.current);
-        dataTimeoutRef.current = null;
-      }
-      setCurrentData(data.sensors);
-      setPrediction(data.prediction);
-
-      const entry = {
-        ...data.sensors,
-        time: data.timestamp,
-        predicted_label: data.prediction.predicted_label,
-        confidence: data.prediction.confidence,
-      };
-      historyRef.current = [...historyRef.current.slice(-59), entry];
-      setHistory([...historyRef.current]);
-
-      if (data.alert) {
-        const alertWithContext = {
-          ...data.alert,
-          sensors: data.sensors,
-          prediction: data.prediction,
-        };
-        setAlerts((prev) => [alertWithContext, ...prev].slice(0, 50));
-        if (Notification.permission === "granted") {
-          const notif = new Notification("SmartFactory Guardian", {
-            body: data.alert.message,
-            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚠️</text></svg>",
-          });
-          notif.onclick = () => {
-            setSelectedAlert(alertWithContext);
-            setActiveTab("alert-detail");
-            window.focus();
-          };
-        }
-      }
-    };
-
-    const onSimStatus = (data) => {
-      setSimulating(data.status === "started");
-    };
-
-    socket.on("sensor_update", onSensorUpdate);
-    socket.on("simulation_status", onSimStatus);
-
-    return () => {
-      socket.off("sensor_update", onSensorUpdate);
-      socket.off("simulation_status", onSimStatus);
-      if (dataTimeoutRef.current) clearTimeout(dataTimeoutRef.current);
-    };
-  }, [socket]);
-
-  const toggleSimulation = () => {
-    if (!socket) return;
-    if (simulating) {
-      socket.emit("stop_simulation");
-      setSimulating(false);
-    } else {
-      socket.emit("start_simulation", { machine_id: "M001" });
-      setSimulating(true);
-      dataTimeoutRef.current = setTimeout(() => {
-        setSimulating(false);
-      }, 5000);
-    }
-  };
+  const sensorHistory = useMemo(() => {
+    const temp = [];
+    const pressure = [];
+    const vibration = [];
+    const humidity = [];
+    const power = [];
+    history.forEach((h) => {
+      temp.push(h.temperature);
+      pressure.push(h.pressure);
+      vibration.push(h.vibration_level);
+      humidity.push(h.humidity);
+      power.push(h.power_consumption);
+    });
+    return { temperature: temp, pressure, vibration_level: vibration, humidity, power_consumption: power };
+  }, [history]);
 
   const handleViewAlert = (alert) => {
     setSelectedAlert(alert);
-    setActiveTab("alert-detail");
+    setActivePage("alert-detail");
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "analytics":
+  const renderPage = () => {
+    switch (activePage) {
+      case "machines":
         return (
-          <div className="flex flex-col gap-4 p-4 lg:p-6">
-            <h2 className="text-lg font-bold text-white">Analytics</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {["temperature", "pressure", "vibration_level", "humidity", "power_consumption"].map((s) => (
-                <SensorDetailChart key={s} sensor={s} data={history} />
-              ))}
-            </div>
-          </div>
+          <MachineMonitoring
+            history={history}
+            prediction={prediction}
+            currentData={currentData}
+          />
         );
+      case "prediction":
+        return <AIPredictionPage prediction={prediction} history={history} />;
       case "alerts":
-        return (
-          <div className="flex flex-col gap-4 p-4 lg:p-6 max-w-3xl">
-            <h2 className="text-lg font-bold text-white">Alerts</h2>
-            <AlertsPanel alerts={alerts} onViewDetail={handleViewAlert} />
-          </div>
-        );
+        return <AlertsPage alerts={alerts} onAcknowledge={acknowledgeAlert} />;
       case "alert-detail":
         return (
-          <div className="p-4 lg:p-6 max-w-3xl">
-            <button
-              onClick={() => setActiveTab("alerts")}
-              className="flex items-center gap-1 text-sm text-dark-400 hover:text-white mb-4"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to Alerts
-            </button>
-            <AlertDetail alert={selectedAlert} />
+          <div className="p-6">
+            <AlertDetail
+              alert={selectedAlert}
+              onBack={() => setActivePage("alerts")}
+              onAcknowledge={acknowledgeAlert}
+            />
           </div>
         );
+      case "analytics":
+        return <AnalyticsPage history={history} alerts={alerts} />;
       case "history":
-        return (
-          <div className="flex flex-col gap-4 p-4 lg:p-6 max-w-3xl">
-            <h2 className="text-lg font-bold text-white">Prediction History</h2>
-            <HistoryPanel history={history} />
-          </div>
-        );
+        return <HistoryPage history={history} />;
+      case "reports":
+        return <ReportsPage history={history} alerts={alerts} stats={{}} />;
+      case "settings":
+        return <SettingsPage />;
+      case "profile":
+        return <ProfilePage />;
+      case "help":
+        return <HelpPage />;
       default:
         return (
-          <div className="p-4 lg:p-6 max-w-7xl mx-auto flex flex-col gap-4">
-            <header className="flex items-center justify-between">
+          <motion.div {...pageTransition} className="p-6 space-y-6 max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-bold text-white">Dashboard</h1>
-                <p className="text-xs text-dark-400 mt-0.5">
-                  Real-time machine monitoring & AI diagnostics
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <NetworkStatus connected={connected} />
-                <button
-                  onClick={toggleSimulation}
-                  disabled={!connected}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    simulating
-                      ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                      : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                <motion.h1
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="text-xl font-display font-bold text-white"
                 >
-                  {simulating ? (
-                    <><Square className="w-4 h-4" /> Stop</>
-                  ) : (
-                    <><Play className="w-4 h-4" /> Start</>
-                  )}
-                </button>
-              </div>
-            </header>
-
-            <KPICards data={currentData} />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <Charts history={history} />
-              </div>
-              <div className="flex flex-col gap-4">
-                <AIPanel prediction={prediction} />
-                <AlertsPanel alerts={alerts} onViewDetail={handleViewAlert} />
+                  Dashboard
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-xs text-white/40 mt-0.5"
+                >
+                  Real-time machine monitoring & AI diagnostics
+                </motion.p>
               </div>
             </div>
 
-            <HistoryPanel history={history} />
-          </div>
+            <KPICards data={currentData} sensorHistory={sensorHistory} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <SensorCharts history={history} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <MachineStatusPie history={history} />
+                  <AlertDistributionChart alerts={alerts} />
+                </div>
+              </div>
+              <div className="space-y-6">
+                <AIPredictionPanel prediction={prediction} />
+                <PowerConsumptionChart history={history} />
+                <AlertsWidget
+                  alerts={alerts}
+                  onViewDetail={handleViewAlert}
+                  onAcknowledge={acknowledgeAlert}
+                  maxItems={4}
+                />
+              </div>
+            </div>
+
+            <HistoryWidget history={history} maxItems={8} />
+          </motion.div>
         );
     }
   };
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {renderContent()}
-    </Layout>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activePage}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        {renderPage()}
+      </motion.div>
+    </AnimatePresence>
   );
 }

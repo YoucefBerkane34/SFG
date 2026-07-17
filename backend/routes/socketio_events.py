@@ -1,3 +1,4 @@
+import os
 import threading
 from datetime import datetime
 from flask_socketio import SocketIO, emit
@@ -8,7 +9,8 @@ from backend.data.ingestion import DataIngestion
 from backend.ai.model_manager import ModelManager
 from backend.utils.logger import logger
 
-socketio = SocketIO(cors_allowed_origins="*", async_mode="eventlet")
+async_mode = os.getenv("ASYNC_MODE", "eventlet" if os.name != "nt" else "threading")
+socketio = SocketIO(cors_allowed_origins="*", async_mode=async_mode)
 model_mgr = ModelManager()
 ingestion = DataIngestion()
 sim_thread = None
