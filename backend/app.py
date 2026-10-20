@@ -10,19 +10,29 @@ from backend.utils.logger import logger
 
 
 def create_app():
+    logger.info("create_app() starting...")
     app = Flask(__name__)
     app.config.from_object(Config)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
+    uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    scheme = uri.split("://")[0] if "://" in uri else uri
+    logger.info(f"Database: {scheme}")
+
     db.init_app(app)
+
     with app.app_context():
-        db.create_all()
-        logger.info("Database tables created")
+        try:
+            db.create_all()
+            logger.info("Database tables created")
+        except Exception as e:
+            logger.error(f"db.create_all() failed: {e}", exc_info=True)
 
     app.register_blueprint(api_bp)
     socketio.init_app(app)
     register_socketio_events(app)
 
+    logger.info("create_app() complete")
     return app
 
 

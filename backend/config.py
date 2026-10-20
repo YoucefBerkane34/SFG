@@ -1,22 +1,31 @@
 import os
-from urllib.parse import urlparse, urlunparse, quote
+import socket
+from urllib.parse import urlparse, quote
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_SQLITE_URI = f"sqlite:///{os.path.join(BASE_DIR, '..', 'data', 'smartguardian.db')}"
+
+
+def _can_connect(host, port, timeout=5):
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
 
 
 def _build_database_uri():
     raw = (os.environ.get("DATABASE_URL") or "").strip()
     if not raw:
-        return f"sqlite:///{os.path.join(BASE_DIR, '..', 'data', 'smartguardian.db')}"
+        return _SQLITE_URI
 
-    # Normalize scheme so urlparse handles it
     if raw.startswith("postgres://"):
         raw = "postgresql://" + raw[len("postgres://"):]
 
     try:
         parsed = urlparse(raw)
         if parsed.scheme not in ("postgresql", "postgres"):
-            return f"sqlite:///{os.path.join(BASE_DIR, '..', 'data', 'smartguardian.db')}"
+            return _SQLITE_URI
 
         user = parsed.username or ""
         password = parsed.password or ""
@@ -24,7 +33,12 @@ def _build_database_uri():
         port = parsed.port or 5432
         database = (parsed.path or "/").lstrip("/")
 
-        # Re-encode credentials to survive special characters in the password
+        if not host or not database:
+            return _SQLITE_URI
+
+        if not _can_connect(host, port):
+            return _SQLITE_URI
+
         creds = ""
         if user:
             creds = quote(user, safe="")
@@ -34,22 +48,27 @@ def _build_database_uri():
 
         uri = f"postgresql+psycopg2://{creds}{host}:{port}/{database}"
 
-        # Render PostgreSQL requires SSL
         query = parsed.query or ""
         if "sslmode=" not in query:
             query = (query + "&" if query else "") + "sslmode=require"
+        if "connect_timeout=" not in query:
+            query = (query + "&" if query else "") + "connect_timeout=5"
         if query:
             uri += "?" + query
 
         return uri
     except Exception:
-        return f"sqlite:///{os.path.join(BASE_DIR, '..', 'data', 'smartguardian.db')}"
+        return _SQLITE_URI
 
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "smartfactory-guardian-secret")
 
     SQLALCHEMY_DATABASE_URI = _build_database_uri()
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     CSV_PATH = os.environ.get(
