@@ -9,9 +9,11 @@ class Config:
     _db_url = (os.environ.get("DATABASE_URL") or "").strip()
     # Render provides postgres://... but SQLAlchemy needs postgresql://...
     if _db_url.startswith("postgres://"):
-        _db_url = "postgresql://" + _db_url[len("postgres://"):]
-    elif _db_url.startswith("postgresql://"):
+        _db_url = "postgresql+psycopg2://" + _db_url[len("postgres://"):]
+    elif _db_url.startswith("postgresql+psycopg2://"):
         pass
+    elif _db_url.startswith("postgresql://"):
+        _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     else:
         _db_url = ""
 
