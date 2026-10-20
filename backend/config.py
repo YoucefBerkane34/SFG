@@ -7,7 +7,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "smartfactory-guardian-secret")
 
     _db_url = (os.environ.get("DATABASE_URL") or "").strip()
-    # Render provides postgres://... but SQLAlchemy needs postgresql://...
+    # Render provides postgres://... but SQLAlchemy needs postgresql+psycopg2://...
     if _db_url.startswith("postgres://"):
         _db_url = "postgresql+psycopg2://" + _db_url[len("postgres://"):]
     elif _db_url.startswith("postgresql+psycopg2://"):
@@ -16,6 +16,10 @@ class Config:
         _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     else:
         _db_url = ""
+
+    # Render PostgreSQL requires SSL
+    if _db_url and "sslmode=" not in _db_url:
+        _db_url += ("&" if "?" in _db_url else "?") + "sslmode=require"
 
     SQLALCHEMY_DATABASE_URI = _db_url or f"sqlite:///{os.path.join(BASE_DIR, '..', 'data', 'smartguardian.db')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
